@@ -1,18 +1,53 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NetChallenge.Domain
 {
     public class Location
     {
-        public int Id { get; set; } // Identificador único del local
-        public string Name { get; set; } // Nombre del local (no puede estar vacío)
-        public string Neighborhood { get; set; } // Barrio del local (no puede estar vacío)
-        public List<Office> Offices { get; } = new List<Office>(); // Lista de oficinas en este local
+        private string _name;
+        private string _neighborhood;
+        private List<Office> _offices;
+        private int _id;
 
-        // Restricciones:
-        // - El nombre no puede estar vacío.
-        // - El barrio no puede estar vacío.
-        // - El nombre no puede repetirse.
+        public int Id { get => _id; set => _id = value; }
+
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    throw new ArgumentException("El nombre de la localizacion no puede estar vacío o ser nulo.");
+                }
+
+                if (!string.IsNullOrEmpty(_name) && value.Trim() == _name.Trim())
+                {
+                    throw new ArgumentException("El nombre de la localizacion no puede repetirse.");
+                }
+
+                _name = value;
+            }
+        }
+
+        public string Neighborhood
+        {
+            get => _neighborhood;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    throw new ArgumentException("El barrio no puede estar vacío o ser nulo.");
+                }
+                _neighborhood = value;
+            }
+        }
+
+        public List<Office> Offices
+        {
+            get => _offices ?? (_offices = new List<Office>());
+            set => _offices = value;
+        }
     }
-
 }

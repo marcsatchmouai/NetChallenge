@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using NetChallenge.Abstractions;
 using NetChallenge.Domain;
 
@@ -18,6 +19,10 @@ namespace NetChallenge.Infrastructure
         {
             location.Id = nextId++;
             locations.Add(location);
+        }
+        public Location GetLocationByName (string Name) 
+        {
+            return locations.SingleOrDefault(l => l.Name == Name);
         }
     }
 }

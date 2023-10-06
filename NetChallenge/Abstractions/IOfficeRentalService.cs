@@ -11,9 +11,9 @@ namespace NetChallenge.Abstractions
         void AddLocation(AddLocationRequest request);
         IEnumerable<LocationDto> GetLocations();
         void AddOffice(AddOfficeRequest request);
-        IEnumerable<OfficeDto> GetOffices(string locationName);
+        IEnumerable<OfficeDto> GetOffices(int locatioId);
         void BookOffice(BookOfficeRequest request);
-        IEnumerable<BookingDto> GetBookings(string locationName, string officeName);
+        IEnumerable<BookingDto> GetBookings(string officeName);
         IEnumerable<OfficeDto> GetOfficeSuggestions(SuggestionsRequest request);
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using NetChallenge.Abstractions;
 using NetChallenge.Domain;
 
@@ -17,6 +19,13 @@ namespace NetChallenge.Infrastructure
         {
             booking.Id = nextId++;
             bookings.Add(booking);
+        }
+
+        public List<Booking> GetBookedOfficeByDay(DateTime startTime, TimeSpan duration, string officeName) 
+        {
+            DateTime finishTime = startTime.Add(duration);
+
+            return bookings.Where(o => o.OfficeName == officeName && (o.FinishTime > startTime || o.StartTime < finishTime)).ToList();
         }
     }
 }
