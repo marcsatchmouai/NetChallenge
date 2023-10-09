@@ -7,7 +7,7 @@ namespace NetChallenge.Test.Utils
         public static AddOfficeRequest Default => new AddOfficeRequest
         {
             LocationName = AddLocationRequestMother.Default.Name,
-            Name = "Default Office",
+            Name = "Default",
             MaxCapacity = 10,
             AvailableResources = new[] { "Internet" }
         };

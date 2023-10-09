@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 using NetChallenge.Abstractions;
 using NetChallenge.Domain;
 using NetChallenge.Dto.Input;
 using NetChallenge.Dto.Output;
-using NetChallenge.Infrastructure;
-using NetChallenge.Infrastructure.Common;
+using NetChallenge.Exceptions;
 using NetChallenge.Infrastructure.Mappers;
 
 namespace NetChallenge
@@ -28,6 +28,11 @@ namespace NetChallenge
         {
             try
             {
+                if ((GetLocations().Where(l => l.Name == request.Name).Count()) > 0)
+                {
+                    ExceptionHandler.HandleException(new ArgumentException("El nombre de la localizacion no puede repetirse."));
+                };
+
                 var location = new Location
                 {
                     Name = request.Name,
@@ -36,86 +41,125 @@ namespace NetChallenge
 
                 _locationRepository.Add(location);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                ExceptionHandler.HandleExceptionAndReturnEmpty<LocationDto>(ex, $"Error al agregar ubicación: {ex.Message}");
             }
         }
 
-        public Response AddOffice(AddOfficeRequest request)
+        public void AddOffice(AddOfficeRequest request)
         {
-            Response response = new Response();
-
             try
             {
                 Office office = OfficeMapper.MapOfficeRequestToOffice(request);
 
+                if (!GetLocations().Where(l => l.Name == request.LocationName).Any())
+                {
+                    ExceptionHandler.HandleException(new InvalidOperationException("El nombre de la localizacion no existe."));
+                };
+                
+                if (GetOffices(request.LocationName).Where(o => o.Name == request.Name).Any()) 
+                {
+                    ExceptionHandler.HandleException(new InvalidOperationException("El nombre de la oficina ya existe en la localizacion."));
+                }
+
+                ValidationExtensions.ValidateNotLessThanOrEqualZero(office.MaxCapacity, "La capacidad debe ser mayor que cero.");
+
                 _officeRepository.Add(office);
-                return response;
             }
             catch (Exception ex)
             {
-                response.AddError(ex.Message);
-                return response;
+                ExceptionHandler.HandleExceptionAndReturnEmpty<LocationDto>(ex, $"Error al agregar oficina: {ex.Message}");
             }
         }
 
-        public Response BookOffice(BookOfficeRequest request)
+        public void BookOffice(BookOfficeRequest request)
         {
-            Response response = new Response();
-
             try
             {
                 Booking bookOffice = BookingMapper.MapBookingRequestToBooking(request);
 
-                if (_bookingRepository.GetBookedOfficeByDay(bookOffice.StartTime, bookOffice.Duration, bookOffice.OfficeName).Any()) 
+                ValidationExtensions.ValidateNotInPast(bookOffice.DateTime, "La fecha de reserva no puede ser en el pasado.");
+
+                if (_bookingRepository.GetBookedOfficeByDay(bookOffice.DateTime, bookOffice.Duration, bookOffice.OfficeName).Any())
                 {
-                    response.AddError("La oficina se encuentra reservada en la fecha seleccionada");
-                    return response;
+                    throw new InvalidOperationException("La oficina se encuentra reservada en la fecha seleccionada");
                 }
 
                 _bookingRepository.Add(bookOffice);
-                return response;
-                
             }
             catch (Exception ex)
             {
-                response.AddError(ex.Message);
-                return response;
+                ExceptionHandler.HandleExceptionAndReturnEmpty<LocationDto>(ex, $"Error al realizar reserva: {ex.Message}");
             }
         }
 
-        public IEnumerable<BookingDto> GetBookings(string officeName)
+        public IEnumerable<BookingDto> GetBookings(string locationName, string officeName)
         {
-            var bookings = _bookingRepository.AsEnumerable().Where(b => b.OfficeName == officeName);
-            return bookings.Select(BookingMapper.MapBookingToDto);
+            locationName.ValidateNotNullOrEmpty(nameof(locationName));
+
+            officeName.ValidateNotNullOrEmpty(nameof(officeName));
+
+            try
+            {
+                IEnumerable<Booking> bookings = _bookingRepository.AsEnumerable().Where(b => b.OfficeName == officeName && b.LocationName == locationName);
+
+                return bookings?.Select(BookingMapper.MapBookingToDto) ?? Enumerable.Empty<BookingDto>();
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHandler.HandleExceptionAndReturnEmpty<BookingDto>(ex, $"Error al obtener las reservas: {ex.Message}");
+            }
         }
 
         public IEnumerable<LocationDto> GetLocations()
         {
-            var locations = _locationRepository.AsEnumerable();
-            return locations.Select(LocationMapper.MapLocationToDto);
+            try
+            {
+                IEnumerable<Location> locations = _locationRepository.AsEnumerable();
+
+                return locations?.Select(LocationMapper.MapLocationToDto) ?? Enumerable.Empty<LocationDto>();
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHandler.HandleExceptionAndReturnEmpty<LocationDto>(ex, $"Error al obtener las locaciones: {ex.Message}");
+            }
         }
 
         public IEnumerable<OfficeDto> GetOffices(string locationName)
         {
-            var offices = _officeRepository.AsEnumerable().Where(o => o.LocationName == locationName);
-            return offices.Select(OfficeMapper.MapOfficeToDto);
+            locationName.ValidateNotNullOrEmpty(nameof(locationName));
+
+            try
+            {
+                IEnumerable<Office> offices = _officeRepository.AsEnumerable().Where(o => o.LocationName == locationName);
+
+                return offices?.Select(OfficeMapper.MapOfficeToDto) ?? Enumerable.Empty<OfficeDto>();
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHandler.HandleExceptionAndReturnEmpty<OfficeDto>(ex, $"Error al obtener las oficinas: {ex.Message}");
+            }
         }
 
         public IEnumerable<OfficeDto> GetOfficeSuggestions(SuggestionsRequest request)
         {
-            // Implementa la lógica para obtener sugerencias de oficinas según las especificaciones
-            // Puedes usar LINQ para filtrar y ordenar las oficinas disponibles
-            var offices = _officeRepository.AsEnumerable();
+            try
+            {
+                var suggestions = _officeRepository.AsEnumerable()
+                    .Where(office => office.MaxCapacity >= request.CapacityNeeded && request.ResourcesNeeded
+                        .All(resource => office.AvailableResources.Contains(resource)))
+                    .OrderBy(office => office.MaxCapacity)
+                    .ThenBy(office => office.AvailableResources.Count())
+                    .ThenBy(office => office.LocationName == request.PreferedNeigborHood ? 0 : 1, Comparer<int>.Default)
+                    .ToList();
 
-            // Aplica filtros según la capacidad, recursos, barrio, etc.
-
-            // Ordena las oficinas por conveniencia
-
-            // Retorna las oficinas sugeridas en formato DTO
-            return offices.Select(OfficeMapper.MapOfficeToDto);
+                return suggestions.Select(OfficeMapper.MapOfficeToDto);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionHandler.HandleExceptionAndReturnEmpty<OfficeDto>(ex, $"Error al obtener sugerencias de oficinas: {ex.Message}");
+            }
         }
     }
 }

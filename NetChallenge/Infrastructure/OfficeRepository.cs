@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using NetChallenge.Abstractions;
 using NetChallenge.Domain;
+using NetChallenge.Exceptions;
+
 
 namespace NetChallenge.Infrastructure
 {

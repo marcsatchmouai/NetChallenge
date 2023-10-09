@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NetChallenge.Abstractions;
 using NetChallenge.Domain;
+using NetChallenge.Exceptions;
 
 namespace NetChallenge.Infrastructure
 {
@@ -21,11 +22,11 @@ namespace NetChallenge.Infrastructure
             bookings.Add(booking);
         }
 
-        public List<Booking> GetBookedOfficeByDay(DateTime startTime, TimeSpan duration, string officeName) 
+        public List<Booking> GetBookedOfficeByDay(DateTime dateTime, TimeSpan duration, string officeName) 
         {
-            DateTime finishTime = startTime.Add(duration);
+            DateTime finishTime = dateTime.Add(duration);
 
-            return bookings.Where(o => o.OfficeName == officeName && (o.FinishTime > startTime || o.StartTime < finishTime)).ToList();
+            return bookings.Where(o => o.OfficeName == officeName && (o.DateTime.Add(o.Duration) >= dateTime || o.DateTime <= finishTime)).ToList();
         }
     }
 }

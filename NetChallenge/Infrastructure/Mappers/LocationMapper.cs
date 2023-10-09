@@ -1,9 +1,6 @@
 ﻿using NetChallenge.Domain;
 using NetChallenge.Dto.Input;
 using NetChallenge.Dto.Output;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace NetChallenge.Infrastructure.Mappers
 {

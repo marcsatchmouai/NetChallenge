@@ -2,6 +2,7 @@
 using System.Linq;
 using NetChallenge.Abstractions;
 using NetChallenge.Domain;
+using NetChallenge.Exceptions;
 
 namespace NetChallenge.Infrastructure
 {

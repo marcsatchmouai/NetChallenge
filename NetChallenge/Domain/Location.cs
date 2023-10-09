@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using NetChallenge.Exceptions;
 
 namespace NetChallenge.Domain
 {
     public class Location
     {
+        private int _id;
         private string _name;
         private string _neighborhood;
-        private List<Office> _offices;
-        private int _id;
 
         public int Id { get => _id; set => _id = value; }
 
@@ -17,15 +17,9 @@ namespace NetChallenge.Domain
             get => _name;
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    throw new ArgumentException("El nombre de la localizacion no puede estar vacío o ser nulo.");
-                }
+                ValidationExtensions.ValidateIsNullOrWhiteSpace(value, "El nombre de la localización no puede estar vacío o ser nulo.");
 
-                if (!string.IsNullOrEmpty(_name) && value.Trim() == _name.Trim())
-                {
-                    throw new ArgumentException("El nombre de la localizacion no puede repetirse.");
-                }
+                ValidationExtensions.ValidateNotEqual(value, _name, "El nombre de la localizacion no puede repetirse.");
 
                 _name = value;
             }
@@ -36,18 +30,10 @@ namespace NetChallenge.Domain
             get => _neighborhood;
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    throw new ArgumentException("El barrio no puede estar vacío o ser nulo.");
-                }
+                ValidationExtensions.ValidateIsNullOrWhiteSpace(value, "El barrio no puede estar vacío o ser nulo.");
+                
                 _neighborhood = value;
             }
-        }
-
-        public List<Office> Offices
-        {
-            get => _offices ?? (_offices = new List<Office>());
-            set => _offices = value;
         }
     }
 }
